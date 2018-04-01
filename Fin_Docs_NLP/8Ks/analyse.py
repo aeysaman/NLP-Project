@@ -20,7 +20,6 @@ def score(change):
     else:
         return "up"
     
-    
 docs = [d for d in docs if not d["2-2dayPriceChange"] is None]
 print(len(docs))
     
@@ -30,10 +29,11 @@ testing = docs[500:]
 training_data = [(FreqDist(d["tokens"]), score(d["2-2dayPriceChange"])) for d in training]
 test_features = [FreqDist(d["tokens"]) for d in testing]
 test_results = [score(d["2-2dayPriceChange"]) for d in testing]
-    
+     
 model = nltk.NaiveBayesClassifier.train(training_data)
-
+ 
 preds = model.classify_many(test_features)
 print(ConfusionMatrix(preds, test_results))
-
+ 
 print(model.show_most_informative_features(10))
+
