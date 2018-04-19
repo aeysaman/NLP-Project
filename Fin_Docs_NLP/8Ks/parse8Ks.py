@@ -3,16 +3,28 @@ Created on Mar 30, 2018
 
 @author: aldoj
 '''
-import re
-from nltk.corpus import stopwords
-import nltk
+import csv
+from datetime import datetime, timedelta
 import glob
 import pickle
+import re
+
+import nltk
+from nltk.corpus import stopwords
 
 stopwords = stopwords.words("english")
 stopwords.extend([",", "(", ")", ":", ".", ",", "``", "''", ";", "$"])
 stopwords.extend(["on", "'s"])
 
+folder = "C:/Users/aldoj/Documents/Natural Language Processing/Final Project/"
+priceLoc = folder + "All Prices/*"
+docLoc = folder + "all 8Ks/*"
+constituentLoc = folder + "SPX constituents 2010.csv"
+outpotLoc = folder + "8Ks - Cons Disc 10B.p"
+
+sector = "Consumer Discretionary"
+mktcap = 10**10
+test = lambda x : x["GICS Sector"] == sector and x["Market Cap:2010C"] != "--" and int(x["Market Cap:2010C"]) >mktcap
 
 def getDocument(f):
     result = []
@@ -58,19 +70,74 @@ def readFile(file):
         
     for x in data:
         x.update({"tokens": cleanWords(nltk.word_tokenize(x["raw_text"]))})
+        x.update({"name":file.split('\\')[-1]})
+        del x["raw_text"]
         
     return data
 
-alldata = []
-for file in glob.glob("./raw/*/*"):
-    for x in readFile(file):
-        x.update({"name":file.split('\\')[-1]})
-        del x["raw_text"]
-        alldata.append(x)
+def readAllFiles(names):
+    result = []
+    for file in glob.glob(docLoc):
+        foo = re.split(r"\\", file)[-1]
+        if(foo in names):
+            print(foo)
+            result.extend(readFile(file))
+    return result
 
+def readPrices(names):
+    data = {}
+    for x in glob.glob(priceLoc):
+        if(re.split(r"\\", x)[-1][:-4] in names):
+            name = re.search(r"\\.*\.",x).group(0).replace(".", "").replace("\\", "")
+            with open(x) as f:
+                foo = {datetime.strptime(row["Date"], "%Y-%m-%d"): row["Adj Close"] for row in csv.DictReader(f)}
+            data.update({name: foo})
+    return data
+            
+def findPrice(name, start, dist, increment):
+    x = start
+    x += timedelta(days=dist)
+    while(not x in prices[name]):
+        if(x>datemax[name] or x<datemin[name]):
+            return None
+        x+= timedelta(days = increment)
+    return float(prices[name][x])
+
+def priceChange(name, date, start, end):
+    before = findPrice(name, date, start, -1)
+    after = findPrice(name, date, end, 1)
+    return None if (before is None or after is None) else (after / before) - 1.0;
+        
+def readNames():
+    with open(constituentLoc) as csvfile:
+        names = [row["Ticker"] for row in csv.DictReader(csvfile) if test(row)] 
+
+    names = [x.split(" ")[0] for x in names]
+    print(len(names), names)
+    return names
+ 
+
+print("start")
+
+names = readNames()
+
+docs = readAllFiles(names)
+
+prices = readPrices(names)
+
+print("done reading")
+
+datemax = {name: max(values.keys()) for name, values in prices.items()}
+datemin = {name: min(values.keys()) for name, values in prices.items()}
+
+for x in docs:
+    x.update({"date": datetime.strptime(x["time"][:8], "%Y%m%d")})
+    x.update({"2-2dayPriceChange": priceChange(x["name"], x["date"], -2, 2)})
+    x.update({"2-5dayPriceChange": priceChange(x["name"], x["date"], 2, 6)})
+    
+print ("done processing")
+
+with open(outpotLoc, "wb") as f:
+    pickle.dump(docs, f)
+    
 print("done")
-
-with open("8Ks_prepped.p", "wb") as f:
-    pickle.dump(alldata, f)
-    
-    
