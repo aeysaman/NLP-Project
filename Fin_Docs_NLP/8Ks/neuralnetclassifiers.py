@@ -135,7 +135,6 @@ predicted = svcclf.predict(testing)
 print("Accruracy of LinearSVC")
 print(metrics.classification_report(testinglabel, predicted))
 
-
 ## Gaussian
 nbclf = GaussianNB()
 nbclf.fit(training, traininglabel)
