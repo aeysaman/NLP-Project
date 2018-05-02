@@ -16,15 +16,17 @@ stopwords = stopwords.words("english")
 stopwords.extend([",", "(", ")", ":", ".", ",", "``", "''", ";", "$"])
 stopwords.extend(["on", "'s"])
 
+sector = "Information Technology"
+mktcapmax = 1000*10**9
+mktcapmin = 10*10**9
+
 folder = "C:/Users/aldoj/Documents/Natural Language Processing/Final Project/"
 priceLoc = folder + "All Prices/*"
 docLoc = folder + "all 8Ks/*"
 constituentLoc = folder + "SPX constituents 2010.csv"
-outpotLoc = folder + "8Ks - Cons Disc 10B.p"
+outpotLoc = folder + "8Ks_Tech_10B.p"
 
-sector = "Consumer Discretionary"
-mktcap = 10**10
-test = lambda x : x["GICS Sector"] == sector and x["Market Cap:2010C"] != "--" and int(x["Market Cap:2010C"]) >mktcap
+test = lambda x : x["GICS Sector"] == sector and x["Market Cap:2010C"] != "--" and int(x["Market Cap:2010C"]) <mktcapmax and int(x["Market Cap:2010C"]) > mktcapmin
 
 def getDocument(f):
     result = []
@@ -132,8 +134,9 @@ datemin = {name: min(values.keys()) for name, values in prices.items()}
 
 for x in docs:
     x.update({"date": datetime.strptime(x["time"][:8], "%Y%m%d")})
-    x.update({"2-2dayPriceChange": priceChange(x["name"], x["date"], -2, 2)})
-    x.update({"2-5dayPriceChange": priceChange(x["name"], x["date"], 2, 6)})
+    x.update({"-2+2dayPriceChange": priceChange(x["name"], x["date"], -2, 2)})
+    x.update({"-1+1dayPriceChange": priceChange(x["name"], x["date"], -1, 1)})
+    x.update({"+2+10dayPriceChange": priceChange(x["name"], x["date"], 2, 10)})
     
 print ("done processing")
 
