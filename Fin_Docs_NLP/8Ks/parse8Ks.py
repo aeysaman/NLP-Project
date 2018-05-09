@@ -1,8 +1,10 @@
 '''
-Created on Mar 30, 2018
-
-@author: aldoj
+Final Project
+Authors: Aldo Eysaman, Dominic Medina, and Jose Lorenzo Guevara
+Class: Natural Language Processing by Professor Prud'hommeaux
+Date: 5/10/2018
 '''
+
 import csv
 from datetime import datetime, timedelta
 import glob
@@ -16,17 +18,19 @@ stopwords = stopwords.words("english")
 stopwords.extend([",", "(", ")", ":", ".", ",", "``", "''", ";", "$"])
 stopwords.extend(["on", "'s"])
 
-sector = "Information Technology"
-mktcapmax = 1000*10**9
-mktcapmin = 10*10**9
+sector = "Health Care"
+mktcapmax = 1000
+mktcapmin = 0
+mktcapmultiple = 10**9
 
 folder = "C:/Users/aldoj/Documents/Natural Language Processing/Final Project/"
 priceLoc = folder + "All Prices/*"
+# docLoc = folder + "all 8Ks/*"
 docLoc = folder + "all 8Ks/*"
 constituentLoc = folder + "SPX constituents 2010.csv"
-outpotLoc = folder + "8Ks_Tech_10B.p"
+outpotLoc = folder + "8Ks_ConsDisc_"+ str(mktcapmin) + "-" +str(mktcapmax) +"B_p2 - test.p"
 
-test = lambda x : x["GICS Sector"] == sector and x["Market Cap:2010C"] != "--" and int(x["Market Cap:2010C"]) <mktcapmax and int(x["Market Cap:2010C"]) > mktcapmin
+test = lambda x : x["GICS Sector"] == sector and x["Market Cap:2010C"] != "--" and int(x["Market Cap:2010C"]) <mktcapmax*mktcapmultiple and int(x["Market Cap:2010C"]) > mktcapmin*mktcapmultiple
 
 def getDocument(f):
     result = []
@@ -70,9 +74,10 @@ cleanWords = lambda x : [y for y in x if (not y in stopwords) and (re.match("\d"
 def readFile(file):
     data = [cleanDocument(x) for x in readDocuments(file)]
         
-    for x in data:
+    for x in data[:10]:
         x.update({"tokens": cleanWords(nltk.word_tokenize(x["raw_text"]))})
         x.update({"name":file.split('\\')[-1]})
+        print(x["tokens"])
         del x["raw_text"]
         
     return data
@@ -118,13 +123,10 @@ def readNames():
     print(len(names), names)
     return names
  
-
 print("start")
 
 names = readNames()
-
 docs = readAllFiles(names)
-
 prices = readPrices(names)
 
 print("done reading")
@@ -141,6 +143,6 @@ for x in docs:
 print ("done processing")
 
 with open(outpotLoc, "wb") as f:
-    pickle.dump(docs, f)
+    pickle.dump(docs, f, protocol=2)
     
 print("done")
